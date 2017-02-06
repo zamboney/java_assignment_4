@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -21,7 +23,7 @@ import javax.servlet.http.HttpServletResponse;
  * @author ritzhaki
  */
 public abstract class BaseServlet extends HttpServlet {
-
+    public static final String  connectionPath = "jdbc:derby://localhost:1527/libraryDB";
     abstract String getJSPPage();
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
@@ -37,6 +39,13 @@ public abstract class BaseServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setAttribute("jsp", this.getJSPPage());
+        if(request.getServletContext().getAttribute("premissions") == null){
+            try {
+                request.getServletContext().setAttribute("premissions",this.query("SELECT APP.PERMISSIONS.ID, APP.PERMISSIONS.\"NAME\" FROM APP.PERMISSIONS"));
+            } catch (ClassNotFoundException | SQLException ex) {
+                Logger.getLogger(BaseServlet.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
         request.getServletContext().getRequestDispatcher("/wrapper.jsp").forward(request, response);
     }
 
@@ -45,7 +54,7 @@ public abstract class BaseServlet extends HttpServlet {
         Class.forName("org.apache.derby.jdbc.ClientDriver");
         Connection cn = null;
         try {
-            cn = DriverManager.getConnection("jdbc:derby://localhost:1527/libraryDB");
+            cn = DriverManager.getConnection(connectionPath);
             Statement st = cn.createStatement();
             ResultSet rs = st.executeQuery(query);
             ResultSetMetaData rsmd = rs.getMetaData();
@@ -71,5 +80,22 @@ public abstract class BaseServlet extends HttpServlet {
         }
         return table;
 
+    }
+    
+    boolean update(String query) throws ClassNotFoundException, SQLException{
+        Class.forName("org.apache.derby.jdbc.ClientDriver");
+        Connection cn = null;
+         try {
+            cn = DriverManager.getConnection(connectionPath);
+            Statement st = cn.createStatement();
+            return st.executeUpdate(query) > -1;
+        } catch (SQLException e) {
+            System.out.println(e);
+            return false;
+        } finally {
+            if (cn != null) {
+                cn.close();
+            }
+        }
     }
 }

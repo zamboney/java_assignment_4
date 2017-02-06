@@ -97,10 +97,13 @@ public class UserServlet extends BaseServlet {
                     + "FROM APP.USERS, APP.PERMISSIONS "
                     + "where APP.USERS.PREMISSION_ID = APP.PERMISSIONS.ID And USER_NAME = '%s' And PASSWORD = '%s'", username, password));
             if (!users.isEmpty()) {
+                request.setAttribute("error", null);
                 Map<String, Object> user = users.get(0);
                 request.getSession().setAttribute("premission", user.get("PREMISSION_ID"));
                 user.remove("PREMISSION_ID");
                 request.getSession().setAttribute("user", user);
+            } else {
+                request.setAttribute("error", true);
             }
         } catch (ClassNotFoundException | SQLException ex) {
             Logger.getLogger(UserServlet.class.getName()).log(Level.SEVERE, null, ex);

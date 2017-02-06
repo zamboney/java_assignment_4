@@ -26,16 +26,25 @@ public class UsersServlet extends BaseServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        if (request.getParameter("delete-id") != null) {
+            try {
+                super.update("UPDATE APP.USERS SET IS_DELETED = TRUE WHERE ID = " + request.getParameter("delete-id"));
+            } catch (ClassNotFoundException | SQLException ex) {
+                Logger.getLogger(UsersServlet.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
         try {
-            request.setAttribute("users", super.query("SELECT APP.USERS.ID as ID,\n" +
-                    "       FNAME,\n" +
-                    "       LNAME,\n" +
-                    "       PENALTY,\n" +
-                    "       APP.PERMISSIONS.\"NAME\" as PERMISSION\n" +
-                    "FROM APP.USERS,APP.PERMISSIONS where APP.USERS.PREMISSION_ID = APP.PERMISSIONS.ID"));
+            request.setAttribute("users", super.query("SELECT APP.USERS.ID as ID,\n"
+                    + "       FNAME,\n"
+                    + "       LNAME,\n"
+                    + "       USER_NAME,\n"
+                    + "       PENALTY,\n"
+                    + "       APP.PERMISSIONS.\"NAME\" as PERMISSION\n"
+                    + "FROM APP.USERS,APP.PERMISSIONS where APP.USERS.PREMISSION_ID = APP.PERMISSIONS.ID AND APP.USERS.IS_DELETED = FALSE"));
         } catch (ClassNotFoundException | SQLException ex) {
             Logger.getLogger(UsersServlet.class.getName()).log(Level.SEVERE, null, ex);
         }
+
         super.doGet(request, response);
     }
 
@@ -50,7 +59,19 @@ public class UsersServlet extends BaseServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        super.doGet(request, response);
+        if (request.getParameter("Create") != null) {
+            String UserName = request.getParameter("UserName"),
+                    Password = request.getParameter("Password"),
+                    FirstName = request.getParameter("FirstName"),
+                    LastName = request.getParameter("LastName"),
+                    Permission = request.getParameter("Permission");
+            try {
+                this.update(String.format("INSERT INTO APP.USERS (USER_NAME,PASSWORD,FNAME,LNAME,PREMISSION_ID,PENALTY) VALUES ('%s','%s','%s','%s','%s',DEFAULT)", UserName, Password, FirstName, LastName, Permission));
+            } catch (ClassNotFoundException | SQLException ex) {
+                Logger.getLogger(UsersServlet.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        response.sendRedirect("/Users");
     }
 
     /**

@@ -5,6 +5,8 @@
  */
 package servlet;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
@@ -23,9 +25,9 @@ import javax.servlet.http.HttpServletResponse;
  * @author ritzhaki
  */
 public abstract class BaseServlet extends HttpServlet {
-
+    
     public static final String connectionPath = "jdbc:derby://localhost:1527/libraryDB";
-
+    
     abstract String getJSPPage();
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
@@ -50,7 +52,7 @@ public abstract class BaseServlet extends HttpServlet {
         }
         request.getServletContext().getRequestDispatcher("/wrapper.jsp").forward(request, response);
     }
-
+    
     List<Map<String, Object>> query(String query) throws ClassNotFoundException, SQLException, SQLException {
         List<Map<String, Object>> table = new ArrayList<>();
         Class.forName("org.apache.derby.jdbc.ClientDriver");
@@ -81,9 +83,9 @@ public abstract class BaseServlet extends HttpServlet {
             }
         }
         return table;
-
+        
     }
-
+    
     boolean update(String query) throws ClassNotFoundException, SQLException {
         Class.forName("org.apache.derby.jdbc.ClientDriver");
         Connection cn = null;
@@ -100,12 +102,12 @@ public abstract class BaseServlet extends HttpServlet {
             }
         }
     }
-
+    
     String getUserId(HttpServletRequest request) {
         return (String) request.getSession().getAttribute("userID");
     }
     private List<Map<String, Object>> Conditions = null;
-
+    
     List<Map<String, Object>> GetConditions(HttpServletRequest request) {
         List<Map<String, Object>> conditions = (List<Map<String, Object>>) request.getSession().getAttribute("conditions");
         if (conditions == null) {
@@ -117,6 +119,37 @@ public abstract class BaseServlet extends HttpServlet {
             }
         }
         return conditions;
-
+        
     }
+    
+    public String getDBScripts(String SQLScriptFile, Object... params) throws IOException {
+        String str = "";
+        StringBuilder sb = new StringBuilder();
+        try {
+            BufferedReader in = new BufferedReader(new FileReader(this.getClass().getClassLoader().getResource("/SQL/" + SQLScriptFile + ".sql").getPath()));
+            while ((str = in.readLine()) != null) {
+                sb.append("\n ").append(str);
+            }
+            in.close();
+        } catch (IOException e) {
+            System.err.println("Failed to Execute" + SQLScriptFile + ". The error is" + e.getMessage());
+        }
+        return String.format(sb.toString(), params);
+    }
+    
+    void updateUser(HttpServletRequest request) {
+        try {
+            request.getSession().setAttribute("user", this.query(String.format(""
+                    + "SELECT USER_NAME as \"User Name\" ,FNAME || ' ' || LNAME as \"Full Name\" , APP.USERS.ID,"
+                    + "APP.USERS.PENALTY as Penalty , "
+                    + "APP.USERS.PREMISSION_ID as PREMISSION_ID,"
+                    + "APP.PERMISSIONS.\"NAME\" as Permission ,"
+                    + "APP.USERS.PREMISSION_ID as PREMISSION_ID "
+                    + "FROM APP.USERS, APP.PERMISSIONS "
+                    + "where APP.USERS.IS_DELETED = FALSE and APP.USERS.PREMISSION_ID = APP.PERMISSIONS.ID And APP.USERS.ID = %s", this.getUserId(request))).get(0));
+        } catch (ClassNotFoundException | SQLException ex) {
+            Logger.getLogger(BaseServlet.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
 }

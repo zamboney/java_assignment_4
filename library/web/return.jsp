@@ -27,13 +27,16 @@
     <thead>
         <tr>
             <th>Book Name</th>
+            <th>Penalty</th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
         <% for (Map<String, Object> rent
                     : rents) {%>
         <tr>
-            <td><%=rent.get("BOOK_NAME")%></td>              
+            <td><%=rent.get("BOOK_NAME")%></td>  
+            <td><%=rent.get("PENALTY")%></td>             
             <td class="pull-right">
 
                 <!-- Trigger the modal with a button -->
@@ -60,7 +63,13 @@
                                             </tr>
                                             <tr>
                                                 <td>Condition</td>
-                                                <td><select class="form-control" name="condition_id">
+                                                <td><select id="PENALTY_SELECT" onchange="(function (e) {
+                                                            document.querySelector('[name=PENALTY]').value =
+                                                                    document.querySelector('#PENALTY_TEXT').innerHTML =
+                                                                    parseInt(document.querySelector('[name=PENALTY_HIDDEN]').value) +
+                                                                    parseInt(document.querySelector('#PENALTY_SELECT').selectedOptions[0].value) -
+                                                                    parseInt(document.querySelector('#PENALTY_SELECT').querySelector('[selected]').value);
+                                                        })()" class="form-control" name="condition_id">
                                                         <%for (Map<String, Object> condition
                                                                     : (List<Map<String, Object>>) request.getSession().getAttribute("conditions")) {
                                                                 if (Integer.parseInt((String) condition.get("ID")) >= Integer.parseInt((String) rent.get("CONDITION_ID"))) {
@@ -71,6 +80,14 @@
                                                     </select></td>
 
                                             </tr>
+                                            <% if (Integer.parseInt(rent.get("PENALTY").toString()) > 0) {%>
+                                            <tr class="danger">
+                                                <td>PENALTY:</td>
+                                                <td id="PENALTY_TEXT"><%=rent.get("PENALTY").toString()%></td>
+                                        <input name="PENALTY" type="hidden" value="<%=rent.get("PENALTY").toString()%>"/>
+                                        <input name="PENALTY_HIDDEN" type="hidden" value="<%=rent.get("PENALTY").toString()%>"/>
+                                        </tr>
+                                        <%}%>
                                         </tbody>
                                     </table>
                                 </div>

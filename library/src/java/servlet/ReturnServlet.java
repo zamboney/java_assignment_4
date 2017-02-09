@@ -48,19 +48,22 @@ public class ReturnServlet extends BaseServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            request.setAttribute("rents", super.query("SELECT \n"
-                    + "    APP.BOOKS.ID as BOOK_ID,\n"
-                    + "    APP.RENTS.ID as RENT_ID,\n"
-                    + "    APP.RENTS.DATE_TO_RETURN,\n"
-                    + "    APP.BOOKS.\"NAME\" as BOOK_NAME,\n"
-                    + "    APP.RENTS.START_DATE \n,"
-                    + "    APP.BOOKS.CONDITION_ID \n"
-                    + "FROM \n"
-                    + "    APP.RENTS,APP.BOOKS \n"
-                    + "WHERE \n"
-                    + "    APP.BOOKS.ID = APP.RENTS.BOOK_ID AND \n"
-                    + "    END_DATE IS NULL AND USER_ID =" + super.getUserId(request)));
-            
+            List<Map<String, Object>> rents = super.query(super.getDBScripts("RentsByUserId", super.getUserId(request)));
+            for (Map<String, Object> rent : rents) {
+                long penalty = 0;
+
+                int dateToReurn = Integer.parseInt(rent.get("DATE_TO_RETURN").toString());
+                Date rentDate = (Date) rent.get("START_DATE");
+                GregorianCalendar cal = new GregorianCalendar();
+                cal.setTime(new Date());
+                cal.add(Calendar.DATE, -dateToReurn);
+                if (cal.getTime().getTime() > rentDate.getTime()) {
+                    penalty = (new Date().getTime() - rentDate.getTime()) / (1000 * 3600 * 24);
+                }
+                rent.put("PENALTY", penalty);
+            }
+            request.setAttribute("rents", rents);
+
             super.GetConditions(request);
         } catch (ClassNotFoundException | SQLException ex) {
             Logger.getLogger(ReturnServlet.class.getName()).log(Level.SEVERE, null, ex);
@@ -83,24 +86,13 @@ public class ReturnServlet extends BaseServlet {
             case "return": {
                 try {
                     String rentId = request.getParameter("id");
-                     Map<String, Object> rent = super.query("SELECT \n"
-                            + "    APP.RENTS.ID as RENT_ID,\n"
-                            + "    APP.RENTS.DATE_TO_RETURN,\n"
-                            + "    APP.RENTS.START_DATE \n"
-                            + "FROM \n"
-                            + "    APP.RENTS \n"
-                            + "WHERE \n"
-                            + "    APP.RENTS.ID =" + rentId).get(0);
-                    int pentaly = Integer.parseInt(rent.get("DATE_TO_RETURN").toString());
-                    Date rentDate = (Date) rent.get("START_DATE");
-                    GregorianCalendar cal = new GregorianCalendar();
-                    cal.setTime(new Date());
-                    cal.add(Calendar.DATE, -pentaly);
-                    if (cal.after(rentDate)) {
-                        super.update("UPDATE APP.RENTS SET END_DATE=GETDATE()");
-                    }
-                    super.update("UPDATE APP.RENTS SET END_DATE=CURRENT_DATE WHERE APP.RENTS.ID=" + rentId);
-                    super.update("UPDATE APP.BOOKS SET CONDITION_ID="+ request.getParameter("condition_id") +" WHERE APP.BOOKS.ID=" + request.getParameter("bookId"));
+                    Map<String, Object> user = (Map<String, Object>)request.getSession().getAttribute("user");
+                    
+                    super.update("UPDATE APP.USERS SET PENALTY=" + (Integer.parseInt(request.getParameter("PENALTY")) + Math.round(Float.parseFloat(user.get("PENALTY").toString())) ) + " WHERE APP.USERS.ID=" + super.getUserId(request));
+                    boolean update = super.update("UPDATE APP.RENTS SET END_DATE=CURRENT_DATE WHERE APP.RENTS.ID=" + rentId);
+                    super.updateUser(request);
+                    super.update("UPDATE APP.BOOKS SET CONDITION_ID=" + request.getParameter("condition_id") + " WHERE APP.BOOKS.ID=" + request.getParameter("bookId"));
+
                 } catch (ClassNotFoundException | SQLException ex) {
                     Logger.getLogger(ReturnServlet.class.getName()).log(Level.SEVERE, null, ex);
                 }

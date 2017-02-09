@@ -89,19 +89,22 @@ public class UserServlet extends BaseServlet {
                 password = request.getParameter("lg_password");
         try {
             List<Map<String, Object>> users = super.query(String.format(""
-                    + "SELECT USER_NAME as \"User Name\" ,FNAME || ' ' || LNAME as \"Full Name\" ,"
+                    + "SELECT USER_NAME as \"User Name\" ,FNAME || ' ' || LNAME as \"Full Name\" , APP.USERS.ID,"
                     + "APP.USERS.PENALTY as Penalty , "
                     + "APP.USERS.PREMISSION_ID as PREMISSION_ID,"
                     + "APP.PERMISSIONS.\"NAME\" as Permission ,"
                     + "APP.USERS.PREMISSION_ID as PREMISSION_ID "
                     + "FROM APP.USERS, APP.PERMISSIONS "
-                    + "where APP.USERS.PREMISSION_ID = APP.PERMISSIONS.ID And USER_NAME = '%s' And PASSWORD = '%s'", username, password));
+                    + "where APP.USERS.IS_DELETED = FALSE and APP.USERS.PREMISSION_ID = APP.PERMISSIONS.ID And USER_NAME = '%s' And PASSWORD = '%s'", username, password));
             if (!users.isEmpty()) {
                 request.setAttribute("error", null);
                 Map<String, Object> user = users.get(0);
+                String userId = user.get("ID").toString();
+                user.remove("ID");
                 request.getSession().setAttribute("premission", user.get("PREMISSION_ID"));
                 user.remove("PREMISSION_ID");
                 request.getSession().setAttribute("user", user);
+                request.getSession().setAttribute("userID", userId);
             } else {
                 request.setAttribute("error", true);
             }

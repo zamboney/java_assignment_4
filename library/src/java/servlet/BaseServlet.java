@@ -23,7 +23,9 @@ import javax.servlet.http.HttpServletResponse;
  * @author ritzhaki
  */
 public abstract class BaseServlet extends HttpServlet {
-    public static final String  connectionPath = "jdbc:derby://localhost:1527/libraryDB";
+
+    public static final String connectionPath = "jdbc:derby://localhost:1527/libraryDB";
+
     abstract String getJSPPage();
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
@@ -39,9 +41,9 @@ public abstract class BaseServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setAttribute("jsp", this.getJSPPage());
-        if(request.getServletContext().getAttribute("premissions") == null){
+        if (request.getServletContext().getAttribute("premissions") == null) {
             try {
-                request.getServletContext().setAttribute("premissions",this.query("SELECT APP.PERMISSIONS.ID, APP.PERMISSIONS.\"NAME\" FROM APP.PERMISSIONS"));
+                request.getServletContext().setAttribute("premissions", this.query("SELECT APP.PERMISSIONS.ID, APP.PERMISSIONS.\"NAME\" FROM APP.PERMISSIONS"));
             } catch (ClassNotFoundException | SQLException ex) {
                 Logger.getLogger(BaseServlet.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -66,7 +68,7 @@ public abstract class BaseServlet extends HttpServlet {
                             row.put(rsmd.getColumnName(i), rs.getString(i));
                             break;
                         case java.sql.Types.DATE:
-                            row.put(rsmd.getColumnName(i), rs.getDate(i));
+                            row.put(rsmd.getColumnName(i), new java.util.Date(rs.getDate(i).getTime()));
                     }
                 }
                 table.add(row);
@@ -81,11 +83,11 @@ public abstract class BaseServlet extends HttpServlet {
         return table;
 
     }
-    
-    boolean update(String query) throws ClassNotFoundException, SQLException{
+
+    boolean update(String query) throws ClassNotFoundException, SQLException {
         Class.forName("org.apache.derby.jdbc.ClientDriver");
         Connection cn = null;
-         try {
+        try {
             cn = DriverManager.getConnection(connectionPath);
             Statement st = cn.createStatement();
             return st.executeUpdate(query) > -1;
@@ -97,5 +99,24 @@ public abstract class BaseServlet extends HttpServlet {
                 cn.close();
             }
         }
+    }
+
+    String getUserId(HttpServletRequest request) {
+        return (String) request.getSession().getAttribute("userID");
+    }
+    private List<Map<String, Object>> Conditions = null;
+
+    List<Map<String, Object>> GetConditions(HttpServletRequest request) {
+        List<Map<String, Object>> conditions = (List<Map<String, Object>>) request.getSession().getAttribute("conditions");
+        if (conditions == null) {
+            try {
+                conditions = this.query("SELECT * FROM APP.CONDITIONS");
+                request.getSession().setAttribute("conditions", conditions);
+            } catch (ClassNotFoundException | SQLException ex) {
+                Logger.getLogger(BaseServlet.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return conditions;
+
     }
 }

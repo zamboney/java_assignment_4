@@ -10,8 +10,9 @@
 <%
     Object str = request.getSession().getAttribute("premission");
     int premissionLVL = 0;
-    if(str != null)
-     premissionLVL = Integer.parseInt(request.getSession().getAttribute("premission").toString());
+    if (str != null) {
+        premissionLVL = Integer.parseInt(request.getSession().getAttribute("premission").toString());
+    }
 %>
 <!DOCTYPE html>
 <html>
@@ -34,13 +35,12 @@
                         <li><a href="/Users">Users</a></li>
                             <%
                                 case 2:%>
-                        <li><a href="/Rent">Rent</a></li>
                         <li><a href="/Return">Return</a></li>                       
                             <%
-                                case 1:%>
+                                case 1:
+                                default:%>
                         <li><a href="/Books">Books</a></li>
                             <%
-                                    default:
                                         break;
                                 }%>
 

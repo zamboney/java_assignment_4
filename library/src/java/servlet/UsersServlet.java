@@ -66,7 +66,7 @@ public class UsersServlet extends BaseServlet {
                     LastName = request.getParameter("LastName"),
                     Permission = request.getParameter("Permission");
             try {
-                this.update(String.format("INSERT INTO APP.USERS (USER_NAME,PASSWORD,FNAME,LNAME,PREMISSION_ID,PENALTY) VALUES ('%s','%s','%s','%s','%s',DEFAULT)", UserName, Password, FirstName, LastName, Permission));
+                this.update(String.format("INSERT INTO APP.USERS (USER_NAME,PASSWORD,FNAME,LNAME,PREMISSION_ID,PENALTY) VALUES ('%s','%s','%s','%s',%s,DEFAULT)", UserName, Password, FirstName, LastName, Permission));
             } catch (ClassNotFoundException | SQLException ex) {
                 Logger.getLogger(UsersServlet.class.getName()).log(Level.SEVERE, null, ex);
             }

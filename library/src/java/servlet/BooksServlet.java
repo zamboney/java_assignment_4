@@ -7,12 +7,14 @@ package servlet;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import modals.Book;
 
 /**
  *
@@ -26,41 +28,24 @@ public class BooksServlet extends BaseServlet {
     
     
     
-    */
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
-        
-        try {
-            request.setAttribute("conditions", super.query("SELECT * FROM APP.CONDITIONS"));
-            request.setAttribute("genres", super.query("SELECT * FROM APP.GENRES"));
-            if (request.getParameter("genre_id") != null) {
-                int genre_id = Integer.parseInt(request.getParameter("genre_id"));
-                request.setAttribute("books", super.query(
-                        "SELECT COUNT(APP.BOOKS.ID) as COPIES, APP.BOOKS.\"NAME\" as  \"NAME\" ,APP.BOOKS.AUTHOR as  AUTHOR ,CONDITIONS.\"NAME\" as \"CONDITION\",CONDITIONS.\"ID\" as \"CONDITION_ID\"\n"
-                        + "FROM  APP.BOOKS, APP.CONDITIONS\n"
-                        + "WHERE APP.BOOKS.CONDITION_ID = APP.CONDITIONS.ID \n"
-                        + "AND APP.BOOKS.GENRE_ID = " + genre_id + "\n"
-                        + "AND BOOKS.ID NOT IN(SELECT BOOK_ID FROM APP.RENTS AS RENTS Where BOOKS.ID = RENTS.BOOK_ID AND RENTS.END_DATE IS NULL)"
-                        + "AND CONDITIONS.\"NAME\"  != 'NOT IN USE'\n"
-                        + "GROUP BY APP.BOOKS.\"NAME\" , AUTHOR, CONDITIONS.\"NAME\", CONDITIONS.\"ID\""));
-            } else if (request.getParameter("search") != null) {
-                String search = request.getParameter("search");
-                request.setAttribute("books", super.query(
-                        "SELECT COUNT(APP.BOOKS.ID) as COPIES, APP.BOOKS.\"NAME\" as  \"NAME\" ,APP.BOOKS.AUTHOR as  AUTHOR, CONDITIONS.\"NAME\" as \"CONDITION\",CONDITIONS.\"ID\" as \"CONDITION_ID\", APP.GENRES.\"NAME\" AS GENRE_NAME\n"
-                        + "FROM APP.GENRES, APP.BOOKS, APP.CONDITIONS\n"
-                        + "WHERE APP.BOOKS.CONDITION_ID = APP.CONDITIONS.ID\n"
-                        + "AND APP.GENRES.ID = APP.BOOKS.GENRE_ID\n"
-                        + "AND LOWER(APP.BOOKS.NAME) LIKE '%" + search.toLowerCase() + "%'\n"
-                        + "AND BOOKS.ID NOT IN(SELECT BOOK_ID FROM APP.RENTS AS RENTS Where BOOKS.ID = RENTS.BOOK_ID AND RENTS.END_DATE IS NULL)"
-                        + "AND CONDITIONS.\"NAME\"  != 'NOT IN USE'\n"
-                        + "GROUP BY APP.BOOKS.\"NAME\" , AUTHOR, CONDITIONS.\"NAME\", CONDITIONS.\"ID\",APP.GENRES.\"NAME\""));
-            }
-            super.doGet(request, response);
-        } catch (ClassNotFoundException | SQLException ex) {
-            Logger.getLogger(BooksServlet.class.getName()).log(Level.SEVERE, null, ex);
+
+        request.setAttribute("conditions", super.getConditions());
+        request.setAttribute("genres", super.getGenres());
+        if (request.getParameter("genre_id") != null) {
+            int genre_id = Integer.parseInt(request.getParameter("genre_id"));
+            request.setAttribute("books", super.getBooksByGenreId(genre_id));
+        } else if (request.getParameter("search") != null) {
+            String search = request.getParameter("search");
+            super.getBooksBySearchWord(search);
+            request.setAttribute("books", super.getBooksBySearchWord(search));
+        } else {
+            request.setAttribute("books", new ArrayList<Object>());
         }
+        super.doGet(request, response);
     }
 
     /**
@@ -81,15 +66,21 @@ public class BooksServlet extends BaseServlet {
                  {
                     try {
                         String bookId = this.query(String.format("SELECT APP.BOOKS.ID FROM BOOKS WHERE NAME = '%s' AND CONDITION_ID = %s AND BOOKS.ID NOT IN(SELECT BOOK_ID FROM APP.RENTS AS RENTS Where BOOKS.ID = RENTS.BOOK_ID AND RENTS.END_DATE IS NULL)", book_name, condition_id)).get(0).get("ID").toString();
-                        String UserId = super.getUserId(request);
+                        int UserId = super.getUserId(request);
                         super.update("INSERT INTO APP.RENTS (BOOK_ID, USER_ID,START_DATE) VALUES (" + bookId + ", " + UserId + ",CURRENT_DATE)");
                     } catch (ClassNotFoundException | SQLException ex) {
                         Logger.getLogger(BooksServlet.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
                 break;
-            case "genre":
-                break;
+            case "genre": {
+                try {
+                    super.update("INSERT INTO APP.GENRES (NAME) VALUES ('" + request.getParameter("name") + "')");
+                } catch (ClassNotFoundException | SQLException ex) {
+                    Logger.getLogger(BooksServlet.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            break;
             case "book":
                 String NAME = request.getParameter("NAME"),
                  AUTHOR = request.getParameter("AUTHOR"),

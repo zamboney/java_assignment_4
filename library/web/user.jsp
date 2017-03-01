@@ -294,18 +294,32 @@ Last change	: 2015/03/27
     }
 
 </style>
-<% HashMap User = (HashMap) request.getSession().getAttribute("user"); %>
-<% if (request.getSession().getAttribute("user") != null) { %>
+<jsp:useBean id="user" class="modals.User" scope="session" />
+<% if (request.getSession().getAttribute("login") != null) { %>
 <div class="container">
     <h2>User Profile</h2>
     <table class="table">
         <tbody>
-            <% for(Object key: User.keySet()){%>
             <tr>
-                <td><%=key%></td>
-                <td><%=User.get(key)%></td>
+                <td>User Name</td>
+                <td><jsp:getProperty name="user" property="userName"/></td>
             </tr>
-            <% };%>
+            <tr>
+                <td>First Name</td>
+                <td><jsp:getProperty name="user" property="fname"/></td>
+            </tr>
+            <tr>
+                <td>Last Name</td>
+                <td><jsp:getProperty name="user" property="lname"/></td>
+            </tr>
+            <tr>
+                <td>Penalty</td>
+                <td><jsp:getProperty name="user" property="penalty"/></td>
+            </tr>
+            <tr>
+                <td>Permission</td>
+                <td><jsp:getProperty name="user" property="permission"/></td>
+            </tr>
         </tbody>
     </table>
         <button class="pull-right btn btn-primary" ><a href="/User?logout">logout</a></button>
